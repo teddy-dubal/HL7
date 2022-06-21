@@ -3,7 +3,6 @@
 namespace Aranyasen\HL7\Messages;
 
 use Aranyasen\HL7\Message;
-use Aranyasen\HL7\Segment;
 use Aranyasen\HL7\Segments\MSA;
 use Aranyasen\HL7\Segments\MSH;
 

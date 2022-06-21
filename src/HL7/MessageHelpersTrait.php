@@ -53,8 +53,8 @@ trait MessageHelpersTrait
         if (\is_array($field)) {
             foreach ($field as $i => $value) {
                 \is_array($value)
-                    ? ($fieldString .= implode($this->subcomponentSeparator, $value))
-                    : ($fieldString .= $value);
+                ? ($fieldString .= implode($this->subcomponentSeparator, $value))
+                : ($fieldString .= $value);
 
                 if ($i < (\count($field) - 1)) {
                     $fieldString .= $this->componentSeparator;
@@ -171,7 +171,7 @@ trait MessageHelpersTrait
         }
 
         $segments = $this->getSegmentsByName($segment->getName());
-        $index = 1;
+        $index    = 1;
         /** @var Segment $seg */
         foreach ($segments as $seg) {
             $seg->setField(1, $index++);

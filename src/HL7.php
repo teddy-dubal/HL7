@@ -2,9 +2,9 @@
 
 namespace Aranyasen;
 
-use InvalidArgumentException;
 use Aranyasen\HL7\Message;
 use Aranyasen\HL7\Segments\MSH;
+use InvalidArgumentException;
 
 /**
  * The HL7 class is a factory class for HL7 messages.
@@ -27,14 +27,14 @@ class HL7
      */
     public function __construct()
     {
-        $this->hl7Globals['SEGMENT_SEPARATOR'] = '\n';
-        $this->hl7Globals['FIELD_SEPARATOR'] = '|';
-        $this->hl7Globals['NULL'] = '""';
-        $this->hl7Globals['COMPONENT_SEPARATOR'] = '^';
-        $this->hl7Globals['REPETITION_SEPARATOR'] = '~';
-        $this->hl7Globals['ESCAPE_CHARACTER'] = '\\';
+        $this->hl7Globals['SEGMENT_SEPARATOR']      = '\n';
+        $this->hl7Globals['FIELD_SEPARATOR']        = '|';
+        $this->hl7Globals['NULL']                   = '""';
+        $this->hl7Globals['COMPONENT_SEPARATOR']    = '^';
+        $this->hl7Globals['REPETITION_SEPARATOR']   = '~';
+        $this->hl7Globals['ESCAPE_CHARACTER']       = '\\';
         $this->hl7Globals['SUBCOMPONENT_SEPARATOR'] = '&';
-        $this->hl7Globals['HL7_VERSION'] = '2.2';
+        $this->hl7Globals['HL7_VERSION']            = '2.5';
     }
 
     /**
@@ -76,7 +76,6 @@ class HL7
         return $this->setGlobal('COMPONENT_SEPARATOR', $value);
     }
 
-
     /**
      * Set the subcomponent separator to be used by the factory. Should be a single character. Default: &
      *
@@ -92,7 +91,6 @@ class HL7
 
         return $this->setGlobal('SUBCOMPONENT_SEPARATOR', $value);
     }
-
 
     /**
      * Set the repetition separator to be used by the factory. Should be a single character. Default: ~
@@ -110,7 +108,6 @@ class HL7
         return $this->setGlobal('REPETITION_SEPARATOR', $value);
     }
 
-
     /**
      * Set the field separator to be used by the factory. Should be a single character. Default: |
      *
@@ -126,7 +123,6 @@ class HL7
 
         return $this->setGlobal('FIELD_SEPARATOR', $value);
     }
-
 
     /**
      * Set the segment separator to be used by the factory. Should be a single character. Default: \015
