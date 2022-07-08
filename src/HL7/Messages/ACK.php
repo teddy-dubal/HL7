@@ -3,7 +3,6 @@
 namespace Aranyasen\HL7\Messages;
 
 use Aranyasen\HL7\Message;
-use Aranyasen\HL7\Segment;
 use Aranyasen\HL7\Segments\MSA;
 use Aranyasen\HL7\Segments\MSH;
 
@@ -57,7 +56,7 @@ class ACK extends Message
         $this->addSegment($msh);
         $this->addSegment($msa);
 
-        $msh->setField(9, 'ACK');
+        $msh->setField(9, ['ACK', $msh->getTriggerEvent(), 'ACK']);
 
         // Construct an ACK based on the request
         if ($req && $reqMsh) {
