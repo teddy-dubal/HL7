@@ -15,35 +15,24 @@ use InvalidArgumentException;
  * ```php $msg->getSegmentByIndex(0) ```
  *
  * The segment separator defaults to \015. To change this, set the global variable $SEGMENT_SEPARATOR.
- *
- * @author     Aranya Sen
  */
 class Message
 {
     use MessageHelpersTrait;
 
-    /**
-     * Array holding all segments of this message.
-     */
-    protected $segments;
+    protected array $segments = [];
 
-    /**
-     * local value for segment separator
-     */
-    protected $segmentSeparator;
-    /**
-     * @var bool Is the bar (|) at the end of each segment required? Default: Yes.
-     */
-    protected $segmentEndingBar;
+    protected string $segmentSeparator;
+    protected bool $segmentEndingBar; # true, if '|' at end of each segment is needed
     protected $fieldSeparator;
-    protected $componentSeparator;
-    protected $subcomponentSeparator;
-    protected $repetitionSeparator;
-    protected $escapeChar;
+    protected string $componentSeparator;
+    protected string $subcomponentSeparator;
+    protected string $repetitionSeparator;
+    protected string $escapeChar;
     protected $hl7Version;
 
-    /** @var bool|null $doNotSplitRepetition */
-    protected $doNotSplitRepetition;
+    // Split (or not) repeated subfields joined by ~. E.g. if true, parses 3^0~4^1 to [3, '0~4', 1]
+    protected bool $doNotSplitRepetition;
 
     /**
      * Constructor for Message. Consider using the HL7 factory to obtain a message instead.
@@ -76,9 +65,6 @@ class Message
         bool $autoIncrementIndices = true,
         bool $doNotSplitRepetition = null
     ) {
-        // Array holding the segments
-        $this->segments = [];
-
         // Control characters and other HL7 properties
         $this->segmentSeparator      = $hl7Globals['SEGMENT_SEPARATOR'] ?? '\n';
         $this->segmentEndingBar      = $hl7Globals['SEGMENT_ENDING_BAR'] ?? true; // '|' at end of each segment
@@ -89,22 +75,24 @@ class Message
         $this->escapeChar            = $hl7Globals['ESCAPE_CHAR'] ?? '\\';
         $this->hl7Version            = $hl7Globals['HL7_VERSION'] ?? '2.5';
 
-        $this->doNotSplitRepetition = $doNotSplitRepetition;
+        $this->doNotSplitRepetition = (bool) $doNotSplitRepetition;
 
         if ($resetIndices) {
             $this->resetSegmentIndices();
         }
 
-        // If an HL7 string is given to the constructor, parse it.
-        if ($msgStr) {
-            $segments = preg_split("/[\n\r" . $this->segmentSeparator . ']/', $msgStr, -1, PREG_SPLIT_NO_EMPTY);
+        // If no HL7 string is passed to the constructor, nothing else to do
+        if (!$msgStr) {
+            return;
+        }
 
-            // The first segment should be the control segment
-            if (!preg_match('/^([A-Z0-9]{3})(.)(.)(.)(.)(.)(.)/', $segments[0], $matches)) {
-                throw new HL7Exception('Not a valid message: invalid control segment', E_USER_ERROR);
-            }
+        $segments = preg_split("/[\n\r" . $this->segmentSeparator . ']/', $msgStr, -1, PREG_SPLIT_NO_EMPTY);
+        $this->setSeparators($segments[0]); // First segment is MSH, the control segment
 
-            [$dummy, $hdr, $fieldSep, $compSep, $repSep, $esc, $subCompSep, $fieldSepCtrl] = $matches;
+        // Do all segments
+        foreach ($segments as $index => $segmentString) {
+            $fields = preg_split("/\\" . $this->fieldSeparator . '/', $segmentString);
+            $segmentName = array_shift($fields);
 
             // Check whether field separator is repeated after 4 control characters
             if ($fieldSep !== $fieldSepCtrl) {
@@ -134,36 +122,17 @@ class Message
                     $fields[$j] = $this->extractComponentsFromFields($fields[$j], $keepEmptySubFields);
                 }
 
-                $segment = null;
-
-                // If a class exists for the segment under segments/, (e.g., MSH)
-                $className = "Aranyasen\\HL7\\Segments\\$segmentName";
-                if (class_exists($className)) {
-                    if ($segmentName === 'MSH') {
-                        array_unshift($fields, $this->fieldSeparator); # First field for MSH is '|'
-                        $segment = new $className($fields);
-                    } else {
-                        $segment = new $className($fields, $autoIncrementIndices);
-                    }
-                } else {
-                    $segment = new Segment($segmentName, $fields);
-                }
-
-                if (!$segment) {
-                    trigger_error('Segment not created', E_USER_WARNING);
-                }
-
-                $this->addSegment($segment);
+                $fields[$j] = $this->extractComponentsFromField($field, $keepEmptySubFields);
             }
+
+            $segment = $this->getSegmentClass($segmentName, $fields, $autoIncrementIndices);
+
+            $this->addSegment($segment);
         }
     }
 
     /**
      * Append a segment to the end of the message
-     *
-     * @param Segment $segment
-     * @return bool
-     * @access public
      */
     public function addSegment(Segment $segment): bool
     {
@@ -179,9 +148,8 @@ class Message
     /**
      * Insert a segment.
      *
-     * @param Segment $segment
      * @param null|int $index Index where segment is inserted
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     public function insertSegment(Segment $segment, int $index = null): void
     {
@@ -211,7 +179,6 @@ class Message
      * Note: Segment count within the message starts at 0.
      *
      * @param int $index Index where segment is inserted
-     * @return Segment
      */
     public function getSegmentByIndex(int $index): ?Segment
     {
@@ -222,10 +189,6 @@ class Message
         return $this->segments[$index];
     }
 
-    /**
-     * @param Segment $segment
-     * @return int|null
-     */
     public function getSegmentIndex(Segment $segment): ?int
     {
         foreach ($this->segments as $ii => $value) {
@@ -262,8 +225,6 @@ class Message
      * after this one will be moved one index up.
      *
      * @param int $index Index where segment is removed
-     * @return boolean
-     * @access public
      */
     public function removeSegmentByIndex(int $index): bool
     {
@@ -277,7 +238,6 @@ class Message
     /**
      * Remove given segment
      *
-     * @param string $segmentName
      * @return int Count of segments removed
      */
     public function removeSegmentsByName(string $segmentName): int
@@ -296,10 +256,8 @@ class Message
      * If index is out of range, or not provided, do nothing. Setting MSH on index 0 will re-validate field separator,
      * control characters and hl7 version, based on MSH(1), MSH(2) and MSH(12).
      *
-     * @param Segment $segment
      * @param int $index Index where segment is set
-     * @return boolean
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     public function setSegment(Segment $segment, int $index): bool
     {
@@ -318,10 +276,6 @@ class Message
 
     /**
      * After change of MSH, reset control fields
-     *
-     * @param Segment $segment
-     * @return bool
-     * @access protected
      */
     protected function resetCtrl(Segment $segment): bool
     {
@@ -330,9 +284,9 @@ class Message
         }
 
         if (preg_match('/(.)(.)(.)(.)/', (string) $segment->getField(2), $matches)) {
-            $this->componentSeparator    = $matches[1];
-            $this->repetitionSeparator   = $matches[2];
-            $this->escapeChar            = $matches[3];
+            $this->componentSeparator = $matches[1];
+            $this->repetitionSeparator = $matches[2];
+            $this->escapeChar = $matches[3];
             $this->subcomponentSeparator = $matches[4];
         }
 
@@ -390,8 +344,6 @@ class Message
 
     /**
      * Convert Segment object to string
-     * @param  Segment  $seg
-     * @return string
      */
     public function segmentToString(Segment $seg): string
     {
@@ -422,8 +374,6 @@ class Message
 
     /**
      * Reset index attribute of each given segment, so when those are added the indices start from 1
-     *
-     * @return void
      */
     public function resetSegmentIndices(): void
     {
@@ -439,12 +389,7 @@ class Message
         }
     }
 
-    /**
-     * @param string $field
-     * @param bool $keepEmptySubFields
-     * @return array|string
-     */
-    private function extractComponentsFromFields(string $field, bool $keepEmptySubFields)
+    private function extractComponentsFromField(string $field, bool $keepEmptySubFields): array|string
     {
         $pregFlags = $keepEmptySubFields
         ? 0
@@ -454,7 +399,7 @@ class Message
             $components = preg_split("/\\" . $this->repetitionSeparator . '/', $field, -1, $pregFlags);
             $fields     = [];
             foreach ($components as $index => $component) {
-                $fields[$index] = $this->extractComponentsFromFields($component, $keepEmptySubFields);
+                $fields[$index] = $this->extractComponentsFromField($component, $keepEmptySubFields);
             }
 
             return $fields;
@@ -472,5 +417,49 @@ class Message
         return count($components) === 1
         ? $components[0]
         : $components;
+    }
+
+    /**
+     * Set various separators - segment, field etc.
+     *
+     * @throws HL7Exception
+     */
+    private function setSeparators(string $msh): void
+    {
+        if (!preg_match('/^([A-Z0-9]{3})(.)(.)(.)(.)(.)(.)/', $msh, $matches)) {
+            throw new HL7Exception('Not a valid message: invalid control segment', E_USER_ERROR);
+        }
+
+        [, , $fieldSep, $compSep, $repSep, $esc, $subCompSep, $fieldSepCtrl] = $matches;
+
+        // Check whether field separator is repeated after 4 control characters
+        if ($fieldSep !== $fieldSepCtrl) {
+            throw new HL7Exception('Not a valid message: field separator invalid', E_USER_ERROR);
+        }
+
+        // Set field separator based on control segment
+        $this->fieldSeparator = $fieldSep;
+
+        // Set other separators
+        $this->componentSeparator = $compSep;
+        $this->subcomponentSeparator = $subCompSep;
+        $this->escapeChar = $esc;
+        $this->repetitionSeparator = $repSep;
+    }
+
+    private function getSegmentClass(string $segmentName, array $fields, bool $autoIncrementIndices): Segment
+    {
+        // If a class exists for the segment under segments/, (e.g., MSH)
+        $className = "Aranyasen\\HL7\\Segments\\$segmentName";
+        if (!class_exists($className)) {
+            return new Segment($segmentName, $fields);
+        }
+
+        if ($segmentName === 'MSH') {
+            array_unshift($fields, $this->fieldSeparator); # First field for MSH is '|'
+            return new $className($fields);
+        }
+
+        return new $className($fields, $autoIncrementIndices);
     }
 }

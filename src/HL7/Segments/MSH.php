@@ -1,8 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Aranyasen\HL7\Segments;
 
 use Aranyasen\HL7\Segment;
+use Exception;
+use InvalidArgumentException;
 
 /**
  * MSH (message header) segment class
@@ -34,8 +38,7 @@ class MSH extends Segment
      *
      * @param null|array $fields
      * @param null|array $hl7Globals
-     * @throws \InvalidArgumentException
-     * @throws \Exception
+     * @throws InvalidArgumentException|Exception
      */
     public function __construct(array $fields = null, array $hl7Globals = null)
     {
@@ -61,7 +64,7 @@ class MSH extends Segment
             $this->setField(2, '^~\\&');
             $this->setVersionId('2.5.1');
         }
-        $this->setDateTimeOfMessage(strftime('%Y%m%d%H%M%S'));
+        $this->setDateTimeOfMessage(date('YmdHis'));
         $this->setMessageControlId($this->getDateTimeOfMessage() . random_int(10000, 99999));
     }
 
@@ -75,8 +78,6 @@ class MSH extends Segment
      *
      * @param int $index Index of field
      * @param string $value
-     * @return bool
-     * @access public
      */
     public function setField(int $index, $value = ''): bool
     {
@@ -141,8 +142,6 @@ class MSH extends Segment
      * If it was empty then the new value will be just ORM.
      *
      * @param string $value
-     * @param int $position
-     * @return bool
      */
     public function setMessageType($value, int $position = 9): bool
     {
@@ -190,8 +189,6 @@ class MSH extends Segment
      * Ref. https://hl7-definition.caristix.com/v2/HL7v2.5.1/Tables/0003
      *
      * @param string $value
-     * @param int $position
-     * @return bool
      */
     public function setTriggerEvent($value, int $position = 9): bool
     {
@@ -292,8 +289,6 @@ class MSH extends Segment
 
     /**
      * ORM / ORU etc.
-     * @param int $position
-     * @return string
      */
     public function getMessageType(int $position = 9): string
     {
@@ -313,7 +308,7 @@ class MSH extends Segment
         return '';
     }
 
-    public function getTriggerEvent(int $position = 9): string
+    public function getTriggerEvent(int $position = 9): string|bool
     {
         $triggerField = $this->getField($position);
         if (!empty($triggerField[1]) && is_array($triggerField)) {
@@ -331,7 +326,7 @@ class MSH extends Segment
         return '';
     }
 
-    public function getMessageControlId(int $position = 10)
+    public function getMessageControlId(int $position = 10): string
     {
         return $this->getField($position);
     }
@@ -346,7 +341,7 @@ class MSH extends Segment
      * @param int $position
      * @return array|null|string
      */
-    public function getVersionId(int $position = 12)
+    public function getVersionId(int $position = 12): string
     {
         return $this->getField($position);
     }

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Aranyasen\HL7\Tests;
@@ -13,7 +14,7 @@ class ConnectionTest extends TestCase
 {
     use Hl7ListenerTrait;
 
-    protected $port = 12011;
+    protected int $port = 12011;
 
     protected function tearDown(): void
     {
@@ -25,10 +26,12 @@ class ConnectionTest extends TestCase
      * @test
      * @throws HL7ConnectionException
      * @throws HL7Exception
-     * @throws \ReflectionException
      */
     public function a_message_can_be_sent_to_a_hl7_server(): void
     {
+        if (!extension_loaded('pcntl')) {
+            self::markTestSkipped("Extension pcntl_fork is not loaded");
+        }
         $pid = pcntl_fork();
         if ($pid === -1) {
             throw new RuntimeException('Could not fork');
@@ -56,10 +59,12 @@ class ConnectionTest extends TestCase
      * @test
      * @throws HL7ConnectionException
      * @throws HL7Exception
-     * @throws \ReflectionException
      */
     public function do_not_wait_for_ack_after_sending_if_corresponding_parameter_is_set(): void
     {
+        if (!extension_loaded('pcntl')) {
+            self::markTestSkipped("Extension pcntl_fork is not loaded");
+        }
         $pid = pcntl_fork();
         if ($pid === -1) {
             throw new RuntimeException('Could not fork');
@@ -72,7 +77,7 @@ class ConnectionTest extends TestCase
 
             $connection = new Connection('localhost', $this->port);
             $msg = new Message("MSH|^~\\&|1|\rPV1|1|O|^AAAA1^^^BB|", null, true, true);
-            self::assertNull($connection->send($msg,' UTF-8', true));
+            self::assertNull($connection->send($msg, ' UTF-8', true));
 
             $this->closeTcpSocket($connection->getSocket()); // Clean up listener
             pcntl_wait($status); // Wait till child is closed
