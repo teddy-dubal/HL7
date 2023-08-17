@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace Aranyasen;
 
-use Aranyasen\Exceptions\HL7Exception;
-use Exception;
 use Aranyasen\HL7\Message;
 use Aranyasen\HL7\Segments\MSH;
+use InvalidArgumentException;
 
 /**
  * The HL7 class is a factory class for HL7 messages.
@@ -32,18 +31,14 @@ class HL7
      */
     private function __construct(string $hl7String = '')
     {
-        $this->setDefaults();
-        $this->hl7String = $hl7String;
-    }
-
-    public static function build(): self
-    {
-        return new static();
-    }
-
-    public static function from(string $hl7String): self
-    {
-        return new static($hl7String);
+        $this->hl7Globals['SEGMENT_SEPARATOR']      = '\n';
+        $this->hl7Globals['FIELD_SEPARATOR']        = '|';
+        $this->hl7Globals['NULL']                   = '""';
+        $this->hl7Globals['COMPONENT_SEPARATOR']    = '^';
+        $this->hl7Globals['REPETITION_SEPARATOR']   = '~';
+        $this->hl7Globals['ESCAPE_CHARACTER']       = '\\';
+        $this->hl7Globals['SUBCOMPONENT_SEPARATOR'] = '&';
+        $this->hl7Globals['HL7_VERSION']            = '2.5';
     }
 
     /**
@@ -120,7 +115,6 @@ class HL7
 
         return $this->setGlobal('REPETITION_SEPARATOR', $value);
     }
-
 
     /**
      * Set the field separator to be used by the factory. Should be a single character. Default: |
