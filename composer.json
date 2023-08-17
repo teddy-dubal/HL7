@@ -19,7 +19,7 @@
     "minimum-stability": "dev",
     "prefer-stable": true,
     "require": {
-        "php": ">=8.3",
+        "php": "^8.0",
         "ext-mbstring": "*"
     },
     "require-dev": {
@@ -41,7 +41,7 @@
     },
     "scripts": {
         "test": "vendor/bin/phpunit tests/ --coverage-text",
-        "lint": "vendor/bin/phpcs --standard=psr12 src/"
+        "lint": "vendor/bin/phpcs"
     },
     "extra": {
         "branch-alias": {

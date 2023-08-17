@@ -1,14 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Aranyasen\HL7\Messages;
 
 use Aranyasen\HL7\Message;
 use Aranyasen\HL7\Segments\MSA;
 use Aranyasen\HL7\Segments\MSH;
+use Exception;
+use InvalidArgumentException;
 
 class ACK extends Message
 {
-    protected $ACK_TYPE;
+    protected string $ACK_TYPE;
 
     /**
      * Usage:
@@ -22,8 +26,8 @@ class ACK extends Message
      * @param Message|null $req
      * @param MSH|null $reqMsh
      * @param array|null $hl7Globals Set control characters or HL7 properties. e.g., ['HL7_VERSION' => '2.5']
-     * @throws \Exception
-     * @throws \InvalidArgumentException
+     * @throws Exception
+     * @throws InvalidArgumentException
      */
     public function __construct(Message $req = null, MSH $reqMsh = null, array $hl7Globals = null)
     {
@@ -77,8 +81,6 @@ class ACK extends Message
      *
      * @param  string  $code  Code to use in acknowledgement
      * @param  string|null  $msg  Acknowledgement message
-     * @return boolean
-     * @access public
      */
     public function setAckCode(string $code, string $msg = null): bool
     {
@@ -111,7 +113,6 @@ class ACK extends Message
      * This will also set the error code to either AE or CE, depending on the mode of the incoming message.
      *
      * @param string $msg Error message
-     * @access public
      */
     public function setErrorMessage(string $msg): void
     {
