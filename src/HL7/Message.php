@@ -90,43 +90,18 @@ class Message
         $this->setSeparators($segments[0]); // First segment is MSH, the control segment
 
         // Do all segments
-        foreach ($segments as $index => $segmentString) {
+        foreach ($segments as $i => $segmentString) {
+            
             $fields = preg_split("/\\" . $this->fieldSeparator . '/', $segmentString);
             $segmentName = array_shift($fields);
-
-            // Check whether field separator is repeated after 4 control characters
-            if ($fieldSep !== $fieldSepCtrl) {
-                throw new HL7Exception('Not a valid message: field separator invalid', E_USER_ERROR);
-            }
-
-            // Set field separator based on control segment
-            $this->fieldSeparator = $fieldSep;
-
-            // Set other separators
-            $this->componentSeparator    = $compSep;
-            $this->subcomponentSeparator = $subCompSep;
-            $this->escapeChar            = $esc;
-            $this->repetitionSeparator   = $repSep;
-
-            // Do all segments
-            foreach ($segments as $i => $iValue) {
-                $fields      = preg_split("/\\" . $this->fieldSeparator . '/', $segments[$i]);
-                $segmentName = array_shift($fields);
-
                 foreach ($fields as $j => $jValue) {
                     // Skip control field
                     if ($i === 0 && $j === 0) {
                         continue;
                     }
-
-                    $fields[$j] = $this->extractComponentsFromFields($fields[$j], $keepEmptySubFields);
+                    $fields[$j] = $this->extractComponentsFromField($fields[$j], $keepEmptySubFields);
                 }
-
-                $fields[$j] = $this->extractComponentsFromField($field, $keepEmptySubFields);
-            }
-
             $segment = $this->getSegmentClass($segmentName, $fields, $autoIncrementIndices);
-
             $this->addSegment($segment);
         }
     }
