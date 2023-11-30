@@ -341,7 +341,7 @@ class MSH extends Segment
      * @param int $position
      * @return array|null|string
      */
-    public function getVersionId(int $position = 12): string
+    public function getVersionId(int $position = 12): array|null|string
     {
         return $this->getField($position);
     }
